@@ -9,7 +9,7 @@ clear
 %    O   O - O   |     Labels
 %    O   O   O \ |      |
 %    O   O   O   O      O
-%    O   O   O   O      O ?
+%    O   O   O   O      O
 %    O   O   O /
 %    O   O - O 
 %    O /
