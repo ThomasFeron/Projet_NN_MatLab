@@ -1,0 +1,154 @@
+clear all; close all;
+
+plotflag=0;
+
+% Input
+image_num = 1;
+train = 1;
+Input = FetchInput(image_num,train); % Feches input image vector from the training lot
+
+% Construction of the NN
+
+L1=18;  %number of neurons in first layer
+L2=18;  %number of neurons in second layer
+L3=10;  %number of Output neurons Limited to sie of label = 2
+
+%initial weights matrix (randomized normal distribution centered on 0)
+
+w1=2.*rand(length(Input.data),L1)-1;
+w2=2.*rand(L1,L2)-1;
+w3=2.*rand(L2,L3)-1;
+
+%TRAINING 
+
+for image_num = 1:1115 % = 70% 
+    
+    learning_rate=2;
+    
+    train = 1;
+    Input = FetchInput(image_num,train);
+    
+    N0=Input.data;
+    N1=sigmoid(N0*w1,0);
+    N2=sigmoid(N1*w2,0);
+    Output=sigmoid(N2*w3,0);
+    
+    Output_error=Input.label-Output;
+
+    Output_delta=Output_error.*sigmoid(Output,1);
+    
+    N2_error=Output_delta*w3';
+    
+    N2_delta=N2_error.*sigmoid(N2,1);
+    
+    N1_error=N2_delta*w2';
+    
+    N1_delta=N1_error.*sigmoid(N1,1);
+    
+    N0_error=N1_delta*w1';
+    
+    N0_delta=N0_error.*sigmoid(N0,1);
+    
+    
+    w3 = w3 + (N2' * Output_delta).*learning_rate;
+    
+    w2 = w2 + (N1' * N2_delta).*learning_rate;
+    
+    w1 = w1 + (N0'* N1_delta).*learning_rate;
+    
+    Cost_training(image_num) = mean(abs(Output - Input.label));
+    Total_Error_trainig(image_num)= sum((Output- Input.label).^2);
+end
+
+%TESTING %
+
+Correct=0;
+Miss=0;
+
+for image_num = 1:477 % length of training set = untouched 30% remaining from the database
+    
+    train=0;
+    Input = FetchInput(image_num,train);
+    
+    N0_test= Input.data;
+    N1_test=sigmoid(N0_test*w1,0);
+    N2_test=sigmoid(N1_test*w2,0);
+    Output_test=sigmoid(N2_test*w3,0);
+    
+    % Score
+    if find(Output_test == max(Output_test))==find(Input.label==max(Input.label))
+        Correct=Correct+1;
+    else
+        Miss = Miss+1;
+    end
+    
+    if plotflag ==1 % plot visualisation
+    View_NN(Input,N1_test,N2_test,Output_test)
+    for i =[1:5:450]
+        if image_num == i
+            pause
+        else
+            drawnow
+        end
+    end
+    end
+    
+    Cost_test(image_num) = mean(abs(Output_test - Input.label));
+    Total_Error_test(image_num)= sum((Output_test- Input.label).^2);
+    
+end
+
+
+figure
+subplot(1,2,1)
+plot(1:1115,Cost_training);
+title('Cost evolution while training','Fontsize',12);
+axis([-inf inf 0 1])
+
+subplot(1,2,2)
+plot(1:477,Cost_test)
+title('Cost evolution during test','Fontsize',12)
+axis([-inf inf 0 1])
+
+
+
+disp('Test results: ')
+
+fprintf('Correct %i \n',Correct)
+fprintf('Miss %i \n', Miss)
+Error_Ratio=Miss/477;
+fprintf('Error_Ratio %f \n',Error_Ratio )
+
+
+function View_NN(Input,N1,N2,Output)
+% Displays the input image and the NN neurons activations.
+
+    dim = sqrt(length(Input.data)); % dimention of the image = sqrt of the image vector.
+    image = reshape(Input.data,dim,dim);
+    
+    CHI = find( (Input.label == max(Input.label)))-1;
+    MAX=find( Output == max(Output))-1;
+    MAX_2 = find( Output == max(Output(Output<max(Output))))-1;
+    
+    subplot(1,2,1);
+    imshow(image');
+    
+    
+    subplot(1,2,2);
+    plot([0 1 2 3 4 5 6 7 8 9],Output,'*','MarkerSize',10,'Color','b');
+    
+    if CHI==MAX;
+        set(gca,'Color','g')
+        xlabel(['Ce chiffre est un  ' num2str(CHI) '  , je vois bien un  ' num2str(MAX)],'FontSize',20);
+    elseif CHI==MAX_2;
+        set(gca,'Color','y')
+        xlabel(['Ce chiffre est un  ' num2str(CHI) '  , moi je trouve que ça ressemblait plus à un  ' num2str(MAX)],'FontSize',20);
+    
+    else
+        set(gca,'Color','r')
+        xlabel(['Ce chiffre est un  ' num2str(CHI) '  , moi je me suis trompé en voyant un ' num2str(MAX)],'FontSize',20);
+        
+end
+
+
+
