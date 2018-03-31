@@ -1,0 +1,107 @@
+clear
+
+plotflag=0;
+
+% Input
+image_num = 1;
+train = 1;
+Input = FetchInput(image_num,train); % Feches input image vector from the training lot
+
+% Construction of the NN
+
+L1=15;  %number of neurons in first layer
+L2=15;  %number of neurons in second layer
+L3=10;  %number of Output neurons Limited to sie of label = 2
+
+%initial weights matrix (randomized normal distribution centered on 0)
+w1=randn(length(Input.data),L1);  % L1 x image vector length
+w2=randn(L1,L2);
+w3=randn(L2,L3);
+
+% NN visualisation
+if plotflag==1
+fig=figure('color',[0.298 0.6 0],'position',[100,70,1100,500]);
+end
+
+%TRAINING 
+
+for image_num = 1:1115 % = 70% 
+    
+    train = 1;
+    Input = FetchInput(image_num,train);
+    
+    N0=Input.data;
+    N1=sigmoid(N0*w1,0);
+    N2=sigmoid(N1*w2,0);
+    Output=sigmoid(N2*w3,0);
+    
+    Output_error=Input.label-Output;
+
+    Output_delta=Output_error.*sigmoid(Output,1);
+    
+    N2_error=Output_delta*w3';
+    
+    N2_delta=N2_error.*sigmoid(N2,1);
+    
+    N1_error=N2_delta*w2';
+    
+    N1_delta=N1_error.*sigmoid(N1,1);
+    
+    N0_error=N1_delta*w1';
+    
+    N0_delta=N0_error.*sigmoid(N0,1);
+    
+    
+    w3 = w3 + N2' * Output_delta;
+    
+    w2 = w2 + N1' * N2_delta;
+    
+    w1 = w1 + N0'* N1_delta;
+    
+    if plotflag ==1 % plot visualisation
+    View_NN(Input,N1,N2,Output)
+        if image_num ==1
+            pause
+        else
+            drawnow
+        end
+    end        
+Cost = Output - Input.label;
+Total_Error(image_num)= sum((Output- Input.label).^2);
+end
+
+figure
+M(1:1115)=mean(Total_Error(:))
+plot(1:1115,Total_Error,1:1115,M,'r')
+title('Total Error evolution while training')
+
+%TESTING %
+
+train=0;
+Correct=0;
+Miss=0;
+
+for image_num = 1:477 % length of training set = untouched 30% remaining from the database
+    
+    train=0;
+    Input = FetchInput(image_num,train);
+    
+    N0_test= Input.data;
+    N1_test=sigmoid(N0_test*w1,0);
+    N2_test=sigmoid(N1_test*w2,0);
+    Output_test=sigmoid(N2_test*w3,0);
+    
+    % Score
+    if find(Output_test == max(Output_test))==find(Input.label==max(Input.label))
+        Correct=Correct+1;
+    else
+        Miss = Miss+1;
+    end
+    
+end
+disp('Test results: ')
+fprintf('Correct %i \n',Correct)
+fprintf('Miss %i \n', Miss)
+Error_Ratio=Miss/477;
+fprintf('Error_Ratio %f \n',Error_Ratio )
+
